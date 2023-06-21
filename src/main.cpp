@@ -2,8 +2,8 @@
 #include <NoteEventManager.h>
 #include <NoteEventListener.h>
 
-const uint8_t calibratedNotesCount = 44;
-const uint8_t calibratedNotes[calibratedNotesCount] = {
+const uint8_t calibratedNotesSize = 44;
+const uint8_t calibratedNotes[calibratedNotesSize] = {
 //  C    C#   D    D#   E    F    F#   G    G#   A    A#   B
     0  , 5  , 9  , 14 , 18 , 23 , 28 , 33 , 37 , 42 , 46 , 51 ,
     56 , 61 , 65 , 70 , 74 , 79 , 83 , 88 , 93 , 98 , 102, 107,
@@ -11,12 +11,21 @@ const uint8_t calibratedNotes[calibratedNotesCount] = {
     168, 167, 172, 177, 181, 186, 190, 197
 };
 
-const NoteEventManager::NoteEvent noteEvents[1] = {
-    {2, &OCR1A, 0, 0, 0, NoteEventManager::EventState::NOT_STARTED}
+const size_t outputPinSize = 2;
+const uint8_t pins[outputPinSize] = {2, 3};
+const NoteEventManager::NoteEvent noteEvents[outputPinSize] = {
+    {pins[0], &OCR1A, 0, 0, 0, NoteEventManager::EventState::NOT_STARTED},
+    {pins[1], &OCR1B, 0, 0, 0, NoteEventManager::EventState::NOT_STARTED},
 };
 
-static NoteEventManager::EventManager eventManager(noteEvents, 1, calibratedNotes, calibratedNotesCount);
-static NoteEventListener::EventListener eventListener(4, &eventManager);
+const size_t messageEventBufferSize = 4;
+const NoteEventListener::MessageEvent messageEvents[outputPinSize] = {
+    {pins[0], new NoteEventListener::Message[messageEventBufferSize], messageEventBufferSize, 0},
+    {pins[1], new NoteEventListener::Message[messageEventBufferSize], messageEventBufferSize, 0},
+};
+
+static NoteEventManager::EventManager eventManager(noteEvents, outputPinSize, calibratedNotes, calibratedNotesSize);
+static NoteEventListener::EventListener eventListener(messageEvents, outputPinSize, &eventManager);
 
 // Generative mode
 void setupNextNote();
@@ -31,15 +40,19 @@ void setup() {
     noInterrupts();
     TCCR1A =
         1 << COM1A1 // set compare match register A
+        | 1 << COM1B1 // set compare match register B
         | 1 << WGM10; // Set 8 bit resolution
     TCCR1B =
         1 << WGM12 // Set fast PWM mode
         | 1 << CS10; // Set no pre-scaler
     pinMode(9, OUTPUT);  // Pin 9 is OCR1A
+    pinMode(10, OUTPUT);  // Pin 10 is OCR1B
     OCR1A = 0;
+    OCR1B = 0;
     interrupts();
 
-    pinMode(2, OUTPUT);
+    for (size_t i = 0; i < outputPinSize; i++)
+        pinMode(noteEvents[i].gatePin, OUTPUT);
 }
 
 uint32_t last = 0;
@@ -74,12 +87,18 @@ void setupNextNote() {
 
 void noteFromByteArray()
 {
-    interval = 100;
+    interval = random(100, 1000);
     gateLength = random(interval / 8, interval / 2);
     uint8_t msbGateLength = gateLength >> 7 & 0x7F;
     uint8_t lsbGateLength = gateLength & 0x7F;
     uint8_t message[5] = {0x82, scale[random(scaleNoteCount)] & 0x7F, 0x92, msbGateLength, lsbGateLength};
     eventListener.parseBytes(message, 5);
+    // message[0] = 0x83;
+    // message[1] = 12;
+    // message[2] = 0x93;
+    // message[3] = 0;
+    // message[4] = 100;
+    // eventListener.parseBytes(message, 5);
 }
 
 void noteFromSerial() {

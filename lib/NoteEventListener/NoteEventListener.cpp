@@ -69,17 +69,17 @@ namespace NoteEventListener
 
         if (lastMessageIndex == 2 && commandType == MessageType::NoteCommand)
         {
-            uint8_t note = lastMessages[0].data & 0x0F;
+            uint8_t pin = lastMessages[0].data & 0x0F;
             uint8_t noteData = lastMessages[1].data;
-            eventManager->setNoteEvent(note, noteData);
+            eventManager->setNoteEvent(pin, noteData);
+            lastMessageIndex = 0;
         }
         else if (lastMessageIndex == 3 && commandType == MessageType::GateCommand)
         {
-            uint8_t gate = lastMessages[0].data & 0x0F;
+            uint8_t pin = lastMessages[0].data & 0x0F;
             uint16_t gateLength = (lastMessages[1].data & 0x7F) << 7 | (lastMessages[2].data & 0x7F);
-            eventManager->setGateEvent(gate, gateLength);
+            eventManager->setGateEvent(pin, gateLength);
+            lastMessageIndex = 0;
         }
-
-        lastMessageIndex = 0;
     }
 }

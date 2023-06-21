@@ -16,9 +16,11 @@ const NoteEventManager::NoteEvent noteEvents[1] = {
 };
 
 static NoteEventManager::EventManager eventManager(noteEvents, 1, calibratedNotes, calibratedNotesCount);
+static NoteEventListener::EventListener eventListener(4, &eventManager);
 
 // Generative mode
 void setupNextNote();
+void noteFromByteArray();
 
 // From serial mode
 void noteFromSerial();
@@ -38,7 +40,6 @@ void setup() {
     interrupts();
 
     pinMode(2, OUTPUT);
-    // TODO Use Supercollider to send pitches via Serial (values from 0 to 255 in 8 bit mode) and update the OCR1A register
 }
 
 uint32_t last = 0;
@@ -46,13 +47,16 @@ uint16_t interval = 1000;
 size_t index = 0;
 uint16_t gateLength = interval / 2;
 void loop() {
-    const uint32_t now = millis();
-    if (now - last >= interval) {
-        last = now;
-        // setupNextNote();
-        noteFromSerial();
-    }
-    eventManager.updateEvents(now);
+    // const uint32_t now = millis();
+    // if (now - last >= interval) {
+    //     last = now;
+    //     // setupNextNote();
+    //     noteFromByteArray();
+    // }
+    // eventManager.updateEvents(now);
+
+    noteFromSerial();
+    eventManager.updateEvents(millis());
 }
 
 const uint8_t gatePin = 2;
@@ -68,15 +72,22 @@ void setupNextNote() {
     eventManager.setGateEvent(gatePin, gateLength);
 }
 
-static NoteEventListener::EventListener eventListener(4, &eventManager);
-void noteFromSerial()
+void noteFromByteArray()
 {
-    // TODO Read bytes from Serial rather than simulating it here
-
     interval = random(1000, 10000);
     gateLength = random(interval / 8, interval / 2);
     uint8_t msbGateLength = gateLength >> 7 & 0x7F;
     uint8_t lsbGateLength = gateLength & 0x7F;
     uint8_t message[5] = {0x82, scale[random(scaleNoteCount)] & 0x7F, 0x92, msbGateLength, lsbGateLength};
     eventListener.parseBytes(message, 5);
+}
+
+const size_t maxReadLength = 8;
+uint8_t readBuffer[maxReadLength];
+void noteFromSerial() {
+    if (Serial.available() > 0) {
+        size_t readLength = Serial.readBytes(readBuffer, maxReadLength);
+        if (readLength > 0)
+            eventListener.parseBytes(readBuffer, readLength);
+    }
 }

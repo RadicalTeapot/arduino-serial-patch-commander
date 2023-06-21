@@ -40,9 +40,9 @@ namespace NoteEventManager
         virtual void setGateEvent(uint8_t pin, uint16_t duration) override;
 
     private:
-        const size_t maxEventCount;
+        const size_t noteEventsSize;
         const size_t noteLookupTableSize;
-        const NoteEvent* events;
+        const NoteEvent* noteEvents;
         const uint8_t* noteLookupTable;
 
         void startEvent(NoteEvent *event);

@@ -3,9 +3,9 @@
 namespace NoteEventManager
 {
     EventManager::EventManager(const NoteEvent *events, const size_t maxEventCount, const uint8_t *noteLookupTable, const size_t noteLookupTableSize)
-        : maxEventCount(maxEventCount),
+        : noteEventsSize(maxEventCount),
           noteLookupTableSize(noteLookupTableSize),
-          events(events),
+          noteEvents(events),
           noteLookupTable(noteLookupTable) {}
 
     /**
@@ -37,9 +37,9 @@ namespace NoteEventManager
      */
     void EventManager::updateEvents(uint32_t now)
     {
-        for (size_t i = 0; i < maxEventCount; i++)
+        for (size_t i = 0; i < noteEventsSize; i++)
         {
-            NoteEvent *current_event = (NoteEvent *)&events[i];
+            NoteEvent *current_event = (NoteEvent *)&noteEvents[i];
             switch (current_event->state)
             {
             case EventState::NOT_STARTED:
@@ -106,10 +106,10 @@ namespace NoteEventManager
      */
     NoteEvent *EventManager::findEvent(uint8_t pinNumber)
     {
-        for (size_t i = 0; i < maxEventCount; i++)
+        for (size_t i = 0; i < noteEventsSize; i++)
         {
-            if (events[i].gatePin == pinNumber)
-                return (NoteEvent *)&events[i];
+            if (noteEvents[i].gatePin == pinNumber)
+                return (NoteEvent *)&noteEvents[i];
         }
 
         return nullptr;

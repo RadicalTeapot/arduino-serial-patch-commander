@@ -26,7 +26,7 @@ void noteFromByteArray();
 void noteFromSerial();
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(31250);
 
     noInterrupts();
     TCCR1A =
@@ -74,7 +74,7 @@ void setupNextNote() {
 
 void noteFromByteArray()
 {
-    interval = random(1000, 10000);
+    interval = 100;
     gateLength = random(interval / 8, interval / 2);
     uint8_t msbGateLength = gateLength >> 7 & 0x7F;
     uint8_t lsbGateLength = gateLength & 0x7F;
@@ -82,12 +82,10 @@ void noteFromByteArray()
     eventListener.parseBytes(message, 5);
 }
 
-const size_t maxReadLength = 8;
-uint8_t readBuffer[maxReadLength];
 void noteFromSerial() {
-    if (Serial.available() > 0) {
-        size_t readLength = Serial.readBytes(readBuffer, maxReadLength);
-        if (readLength > 0)
-            eventListener.parseBytes(readBuffer, readLength);
+    int byte = Serial.read();
+    while (byte != -1) {
+        eventListener.parseByte(static_cast<uint8_t>(byte));
+        byte = Serial.read();
     }
 }

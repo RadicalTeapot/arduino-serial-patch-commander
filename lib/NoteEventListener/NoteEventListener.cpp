@@ -25,32 +25,33 @@ namespace NoteEventListener
     void EventListener::parseBytes(uint8_t *bytes, size_t size)
     {
         for (size_t i = 0; i < size; i++)
+            parseByte(bytes[i]);
+    }
+
+    void EventListener::parseByte(uint8_t byte)
+    {
+        const auto commandType = static_cast<MessageType>(byte >> 4);
+
+        switch (commandType)
         {
-            const auto message = bytes[i];
-            const auto commandType = static_cast<MessageType>(message >> 4);
-
-            switch (commandType)
-            {
-            case MessageType::NoteCommand:
-            case MessageType::GateCommand:
-            {
-                lastMessages[0] = {commandType, message};
-                lastMessageIndex = 1;
-                // If adding commands without a data byte, call sendNoteEventIfNeeded here too
-                break;
-            }
-            default:
-            {
-                if (commandType > MessageType::Data || lastMessageIndex <= 0)
-                    continue;
-
-                lastMessages[lastMessageIndex] = {MessageType::Data, message};
-                lastMessageIndex = (lastMessageIndex + 1) % lastMessageSize;
-                sendNoteEventIfNeeded();
-                break;
-            }
-            }
+        case MessageType::NoteCommand:
+        case MessageType::GateCommand:
+        {
+            lastMessages[0] = {commandType, byte};
+            lastMessageIndex = 1;
+            break;
         }
+        default:
+        {
+            if (commandType > MessageType::Data || lastMessageIndex <= 0)
+                return;
+
+            lastMessages[lastMessageIndex] = {MessageType::Data, byte};
+            lastMessageIndex = (lastMessageIndex + 1) % lastMessageSize;
+            break;
+        }
+        }
+        sendNoteEventIfNeeded();
     }
 
     /**

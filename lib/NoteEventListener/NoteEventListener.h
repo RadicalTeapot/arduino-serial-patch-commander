@@ -11,6 +11,7 @@ namespace NoteEventListener
     public:
         EventListener(size_t maxCommandSize, NoteEventManager::IEventManager *eventManager);
         void parseBytes(uint8_t *bytes, size_t size);
+        void parseByte(uint8_t byte);
 
     private:
         enum class MessageType : uint8_t
